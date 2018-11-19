@@ -129,14 +129,6 @@ input:focus {
   padding-bottom: 10px;
 }
 
-.topic_preview {
-  font-size: 12px;
-  font-family: Helvetica, Arial, Sans-Serif;
-  text-align: center;
-  padding-bottom: 10px;
-}
-
-
 #title-div {
   font-size: 20px;
   font-family: Helvetica, Arial, Sans-Serif;
@@ -4007,11 +3999,7 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
                      showAxes = true,
                      showExtra = false,
                      doCensorPoints = true,
-                     centerLabelsOverPoints = false,
-                     xAxisLabels = null,
-                     yAxisLabels = null,
-                     topic_model_preview_size=10,
-                     verticalLines = null) {
+                     centerLabelsOverPoints = false) {
         var divName = 'd3-div-1';
 
         // Set the dimensions of the canvas / graph
@@ -4026,7 +4014,6 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
         // Set the ranges
         var x = d3.scaleLinear().range([0, width]);
         var y = d3.scaleLinear().range([height, 0]);
-
 
         if (showNeutral) {
 
@@ -4133,23 +4120,11 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
 
         if (xAxisValues) {
             xAxis = labelWithZScore(d3.axisBottom(x), 'x', xAxisValues);
-        } else if (xAxisLabels) {
-            xAxis = d3.axisBottom(x)
-                .ticks(xAxisLabels.length)
-                .tickFormat(function (d, i) {
-                    return xAxisLabels[i];
-                });
         } else {
             xAxis = d3.axisBottom(x).ticks(3).tickFormat(axisLabelerFactory('x'));
         }
         if (yAxisValues) {
             yAxis = labelWithZScore(d3.axisLeft(y), 'y', yAxisValues);
-        } else if (yAxisLabels) {
-            yAxis = d3.axisLeft(y)
-                .ticks(yAxisLabels.length)
-                .tickFormat(function (d, i) {
-                    return yAxisLabels[i];
-                });
         } else {
             yAxis = d3.axisLeft(y).ticks(3).tickFormat(axisLabelerFactory('y'));
         }
@@ -4161,9 +4136,9 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
         var interpolateLightGreys = d3.interpolate(d3.rgb(230, 230, 230),
             d3.rgb(130, 130, 130));
         // setup fill color
+        //var color = d3.interpolateRdYlBu;
         if (color == null) {
             color = d3.interpolateRdYlBu;
-            //color = d3.interpolateWarm;
         }
 
         var pixelsToAddToWidth = 200;
@@ -4482,39 +4457,7 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
             }).filter(function (x) {
                 return x > -1
             });
-            var neutralCategoryNumList = fullData.docs.categories.map(function (x, i) {
-                if (fullData.info.neutral_category_internal_names.indexOf(x) > -1) {
-                    return i;
-                } else {
-                    return -1;
-                }
-            }).filter(function (x) {
-                return x > -1
-            });
-            var extraCategoryNumList = fullData.docs.categories.map(function (x, i) {
-                if (fullData.info.extra_category_internal_names.indexOf(x) > -1) {
-                    return i;
-                } else {
-                    return -1;
-                }
-            }).filter(function (x) {
-                return x > -1
-            });
 
-            var pattern = null;
-            if ('metalists' in fullData && term in fullData.metalists) {
-                // from https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
-                function escapeRegExp(str) {
-                    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-                }
-
-                console.log('term');
-                console.log(term);
-                pattern = new RegExp(
-                    '\\b(' + fullData.metalists[term].map(escapeRegExp).join('|') + ')\\b',
-                    'gim'
-                );
-            }
 
             for (var i in fullData.docs.extra) {
                 if (term in fullData.docs.extra[i]) {
@@ -4523,32 +4466,19 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
                             function (a, b) {
                                 return a + b
                             });
+                    var text = fullData.docs.texts[i];
+                    if (!useFullDoc)
+                        text = text.slice(0, 300);
+                    var curMatch = {'id': i, 'snippets': [text], 'strength': strength};
 
+                    curMatch['meta'] = fullData.docs.meta[i];
                     var docLabel = fullData.docs.labels[i];
-                    var numericLabel = -1;
+                    var numericLabel = 2;
                     if (docLabel == categoryNum) {
                         numericLabel = 0;
                     } else if (notCategoryNumList.indexOf(docLabel) > -1) {
                         numericLabel = 1;
-                    } else if (neutralCategoryNumList.indexOf(docLabel) > -1) {
-                        numericLabel = 2;
-                    } else if (extraCategoryNumList.indexOf(docLabel) > -1) {
-                        numericLabel = 3;
                     }
-                    if (numericLabel == -1) {
-                        continue;
-                    }
-                    var text = fullData.docs.texts[i];
-                    if (!useFullDoc)
-                        text = text.slice(0, 300);
-                    if (pattern !== null) {
-                        text = text.replace(pattern, '<b>$&</b>');
-                    }
-                    var curMatch = {'id': i, 'snippets': [text], 'strength': strength};
-
-                    curMatch['meta'] = fullData.docs.meta[i];
-
-
                     matches[numericLabel].push(curMatch);
                 }
             }
@@ -4675,25 +4605,10 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
             d3.select('#termstats')
                 .selectAll("div")
                 .remove();
-            var termHtml = 'Term: <b>' + info.term + '</b>';
-            if ('metalists' in fullData && info.term in fullData.metalists) {
-                termHtml = 'Topic: <b>' + info.term + '</b>';
-            }
             d3.select('#termstats')
                 .append('div')
                 .attr("class", "snippet_header")
-                .html(termHtml);
-            if ('metalists' in fullData && info.term in fullData.metalists) {
-                d3.select('#termstats')
-                    .attr("class", "topic_preview")
-                    .append('div')
-                    .html("<b>Topic preview</b>: "
-                        + fullData.metalists[info.term]
-                            .slice(0, topic_model_preview_size)
-                            .reduce(function (x, y) {
-                                return x + ', ' + y
-                            }));
-            }
+                .html('Term: <b>' + info.term + '</b>');
             var message = '';
             var cat_name = fullData.info.category_name;
             var ncat_name = fullData.info.not_category_name;
@@ -5247,24 +5162,24 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
                     {'anchor': 'start', 'xoff': 10, 'yoff': -15, 'alignment-baseline': 'ideographic'},
                     {'anchor': 'start', 'xoff': -10, 'yoff': 15, 'alignment-baseline': 'ideographic'},
                 ];
-                if (centerLabelsOverPoints) {
-                    configs = [{'anchor': 'middle', 'xoff': 0, 'yoff': 0, 'alignment-baseline': 'middle'}];
-                }
+                if(centerLabelsOverPoints) {
+                 configs = [{'anchor': 'middle', 'xoff': 0, 'yoff': 0, 'alignment-baseline': 'middle'}];
+                 }
                 var matchedElement = null;
                 for (var configI in configs) {
                     var config = configs[configI];
                     var curLabel = svg.append("text")
-                    //.attr("x", x(data[i].x) + config['xoff'])
-                    //.attr("y", y(data[i].y) + config['yoff'])
-                        .attr("x", x(myX) + config['xoff'])
-                        .attr("y", y(myY) + config['yoff'])
-                        .attr('class', 'label')
-                        .attr('class', 'pointlabel')
-                        .attr('font-family', 'Helvetica, Arial, Sans-Serif')
-                        .attr('font-size', '10px')
-                        .attr("text-anchor", config['anchor'])
-                        .attr("alignment-baseline", config['alignment'])
-                        .text(term);
+                        //.attr("x", x(data[i].x) + config['xoff'])
+                        //.attr("y", y(data[i].y) + config['yoff'])
+                            .attr("x", x(myX) + config['xoff'])
+                            .attr("y", y(myY) + config['yoff'])
+                            .attr('class', 'label')
+                            .attr('class', 'pointlabel')
+                            .attr('font-family', 'Helvetica, Arial, Sans-Serif')
+                            .attr('font-size', '10px')
+                            .attr("text-anchor", config['anchor'])
+                            .attr("alignment-baseline", config['alignment'])
+                            .text(term);
                     var bbox = curLabel.node().getBBox();
                     var borderToRemove = .25;
                     if (doCensorPoints) {
@@ -5380,7 +5295,7 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
             data = data.sort(sortByDist ? euclideanDistanceSort : scoreSort);
             console.log("Sorted Data:");
             console.log(data);
-            if (doCensorPoints) {
+            if(doCensorPoints) {
                 for (var i in data) {
                     var d = data[i];
                     censorPoints(
@@ -5405,27 +5320,6 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
                     y2 = bbox.y + bbox.height - borderToRemove;
                 rectHolder.add(new Rectangle(x1, y1, x2, y2));
                 //return insertRangeTree(rangeTree, x1, y1, x2, y2, '~~_other_');
-            }
-
-            d3.selection.prototype.moveToBack = function () {
-                return this.each(function () {
-                    var firstChild = this.parentNode.firstChild;
-                    if (firstChild) {
-                        this.parentNode.insertBefore(this, firstChild);
-                    }
-                });
-            };
-
-            if (verticalLines) {
-                for (i in verticalLines) {
-                    svg.append("g")
-                        .attr("transform", "translate(" + x(verticalLines) + ", 1)")
-                        .append("line")
-                        .attr("y2", height)
-                        .style("stroke", "#dddddd")
-                        .style("stroke-width", "1px")
-                        .moveToBack();
-                }
             }
 
             if (showAxes) {
@@ -5498,7 +5392,14 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
                     .text(getLabelText('y'));
                 registerFigureBBox(yLabel);
             } else {
-
+                d3.selection.prototype.moveToBack = function () {
+                    return this.each(function () {
+                        var firstChild = this.parentNode.firstChild;
+                        if (firstChild) {
+                            this.parentNode.insertBefore(this, firstChild);
+                        }
+                    });
+                };
                 var x_line = svg.append("g")
                     .attr("transform", "translate(0, " + y(0.5) + ")")
                     .append("line")
@@ -5887,7 +5788,7 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
         };
 
         //fullData = getDataAndInfo();
-        if (fullData.docs) {
+        if(fullData.docs) {
             var corpusWordCounts = getCorpusWordCounts();
         }
         var redrawPoints = processData(fullData);
@@ -5918,6 +5819,6 @@ RectangleHolder.prototype.findMatchingRectangles = function (bx1, by1, bx2, by2,
     };
 }(d3);
 
-function getDataAndInfo() { return{"info": {"category_name": "Top_5_topics", "not_category_name": "Others", "category_terms": ["help", "correct", "bank", "check", "payment", "last", "account", "not", "make", "pay"], "not_category_terms": ["help", "correct", "bank", "check", "payment", "last", "account", "not", "make", "pay"], "category_internal_name": "Top_5_topics", "not_category_internal_names": ["Others"], "categories": ["Top_5_topics", "Others"], "neutral_category_internal_names": [], "extra_category_internal_names": [], "neutral_category_name": "Neutral", "extra_category_name": "Extra"}, "data": [{"x": 0.0, "y": 0.2222222222222222, "ox": 0.0, "oy": 0.2222222222222222, "term": "make", "cat25k": 2165, "ncat25k": 0, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 11, "ncat": 0, "s": 1.0, "os": 1.0, "bg": 5.4309569503150494e-08}, {"x": 0.1111111111111111, "y": 0.3333333333333333, "ox": 0.1111111111111111, "oy": 0.3333333333333333, "term": "pay", "cat25k": 2165, "ncat25k": 0, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 11, "ncat": 0, "s": 1.0, "os": 1.0, "bg": 1.702799082804302e-07}, {"x": 0.2222222222222222, "y": 0.8888888888888888, "ox": 0.2222222222222222, "oy": 0.8888888888888888, "term": "account", "cat25k": 3346, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 17, "ncat": 1, "s": 0.7500000000000001, "os": 0.9759238581490387, "bg": 1.7680698779720407e-07}, {"x": 0.3333333333333333, "y": 0.4444444444444444, "ox": 0.3333333333333333, "oy": 0.4444444444444444, "term": "payment", "cat25k": 2362, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 12, "ncat": 1, "s": 0.5, "os": 0.9654610175960856, "bg": 1.7974834567918713e-07}, {"x": 0.4444444444444444, "y": 1.0, "ox": 0.4444444444444444, "oy": 1.0, "term": "not", "cat25k": 3346, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 17, "ncat": 1, "s": 0.7500000000000001, "os": 0.9759238581490387, "bg": 1.3670084970901482e-08}, {"x": 0.5555555555555556, "y": 0.0, "ox": 0.5555555555555556, "oy": 0.0, "term": "bank", "cat25k": 1575, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 8, "ncat": 1, "s": 0.25000000000000006, "os": 0.9471642157623057, "bg": 1.9659271405776501e-07}, {"x": 0.6666666666666666, "y": 0.7777777777777778, "ox": 0.6666666666666666, "oy": 0.7777777777777778, "term": "last", "cat25k": 2953, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 15, "ncat": 1, "s": 0.6250000000000001, "os": 0.9726004597852271, "bg": 7.662796219426343e-08}, {"x": 0.7777777777777778, "y": 0.1111111111111111, "ox": 0.7777777777777778, "oy": 0.1111111111111111, "term": "check", "cat25k": 1969, "ncat25k": 2273, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 10, "ncat": 1, "s": 0.37500000000000006, "os": 0.9582236338189318, "bg": 8.998264300258401e-08}, {"x": 0.8888888888888888, "y": 0.5555555555555556, "ox": 0.8888888888888888, "oy": 0.5555555555555556, "term": "correct", "cat25k": 2559, "ncat25k": 4545, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 13, "ncat": 2, "s": 0.125, "os": 0.9342754755378848, "bg": 6.74635491070997e-07}, {"x": 1.0, "y": 0.6666666666666666, "ox": 1.0, "oy": 0.6666666666666666, "term": "help", "cat25k": 2559, "ncat25k": 6818, "neut25k": 0, "neut": 0, "extra25k": 0, "extra": 0, "cat": 13, "ncat": 3, "s": 0.0, "os": 0.458259704602758, "bg": 5.236848373331385e-08}], "docs": {"categories": ["Top_5_topics", "Others"], "labels": [0, 0, 0, 1, 1, 1], "texts": ["amount account payment due not make bank pay why last correct furniture check date receive\ndate due change payment help not wont last correct statement dont wanna able duty assist\nshow post account not doesnt clear pend check payment last why make help long couple\npayment make account not last wanna help dont want schedule check due dollar phone didnt\nminimum due payment require pay balance monthly statement not minimal correct doesnt amount why dollar\nauto automatic automatically payment pay enroll account recur take reoccur bank online enrollment schedule not\npay wanna dont bill want paid not money wont cant make phone extra amount long\npayment account number make pay bank confirmation correct statement confirm debit authorize modify check electronic\neasy qvc card item installment pay payment order apologize bill last understand confuse bank not\napply regular want separate dollar correct payment make not difference balance wanna account amount pay\ncard debit payment number make account check confirmation pay date expiration last code wanna process\nfee payment late balance make waive wave help account able dollar courtesy last charge online\nnumber account check rout payment correct bank make pay debit authorize confirm confirmation statement electronic\n", "balance account correct last help statement show new credit check why add confuse amount get\ntransaction pend last amount help make not correct valid dollar check date show recognize service\nopen account information new beneficiary verify number check correct wanna applicant bank consent apply report\nreceive never havent not didnt dont mail get bill why send last resend wait check\noption enter information connect hold card number summary didnt inquiry not credit couldnt understand bank\ncash pin atm bank maximum help card able withdraw machine withdrawal money want dollar limit\ninterest charge pay balance not paid amount account defer add correct rate avoid statement why\nspeak primary permission account holder card information phone authorization able spouse access change secondary understand\npaid dollar pay didnt last get bill owe wasnt why credit mistake confuse balance account\nmember membership card credit renew renewal number want wanna not valid help assistance chat verify\nbill cycle statement help last correct redeem service not deal credit get confusion show concern\n", "address,update,change,new,correct,help,account,last,apartment,verify,mail,make,not,get,information\ntravel,notification,travele,card,account,number,help,international,trip,date,vacation,leave,contact,last,case\naccount,add,authorize,user,card,charge,date,credit,last,birth,help,allow,report,correct,bureau\nphonenumber,phone,cell,number,home,mobile,update,verify,text,supplier,line,dont,help,date,not\n", "rate lower reduce change apr agreement high offer percentage federal higher low reduction automation help\nexperience higher feedback apology exist repair sad military protection time damage human survey select worst\n", "promotion offer surgery extend extension correct equal long finance not help motion doctor able procedure\nexpire promotion promotional allocate promo amount defer allocation want help expiration correct payment date cycle\n", "account information  debt  advise  attempt  collect  mail  bank address last due phone change hold check\n"], "meta": ["Payment", "Account Inquiry", "PIU", "Terms", "Promotion", "Collections Message"]}}; }
-plotInterface = buildViz(1000,600,null,null,false,false,false,false,false,true,false,false,true,0.1,false,undefined,undefined,getDataAndInfo(),true,false,null,null,null,null,true,false,true,false,null,null,10,null);
+function getDataAndInfo() { return{"info": {"extra_category_internal_names": [], "neutral_category_internal_names": [], "category_internal_name": "Top 5 Topics", "categories": ["Top 5 Topics", "Others"], "category_name": "Top 5 Topics", "not_category_internal_names": ["Others"], "extra_category_name": "Extra", "neutral_category_name": "Neutral", "not_category_terms": ["press", "satisfied", "satisfied press", "three", "one", "card", "number", "two for", "two", "like"], "not_category_name": "Others", "category_terms": ["press", "satisfied", "satisfied press", "three", "one", "card", "number", "two for", "two", "like"]}, "docs": {"texts": ["thank you for calling jcpenney credit services all of our representatives are currently assisting other customers please remain on the line for the next available representative you may also visit us at jcpenney com to access your account information thank you for waiting your call is very important to us please remain on the line for the next available representative remember you can also receive account information online at jcpenney com \r\n", "thank you for calling credit services this call is recorded my name this is nubia make you get your first listing please\r\nmy first name is suzanne s u d h eight i my last name is cushman katie i s h n a and\r\nthank you ms chrisman advance please have you verify the last redacted of your social\r\nyes i have i am having difficulty doing that because it's not registering my social is four six six nine\r\nokay i see where the area is i'll be happy to update that information but i do\r\nor what\r\nneed some additional verification yeah the last digit is\r\noh\r\ncorrect so\r\nmy goodness\r\ni can\r\nredacted yes\r\ni can get that updated for you in just a moment mary please\r\nyeah\r\nhave you verify\r\ntwo\r\nyour date of birth\r\nredacted\r\nthank you hey do you have your gapcard\r\nyes\r\nup here with you\r\nplease it is redacted actually i got it today and i wanted to activate it and that's why it's not activating\r\nalright no problem but the hair man i had to get the expiration date\r\nit's redacted\r\nand the security code on the back\r\nredacted i think that's what it says there's a four digit as well it's a 7threedigit7 i think the 7threedigit7 security code redacted\r\nyet redacted okay alright thank you alright so let's go ahead i'm going to need your full social in order to update it correctly can you go ahead please\r\nokay it's redacted\r\nokay great thank you and i was able to get those changes made for you and are you calling to activate your card\r\nyes please\r\nokay great thank you it is fully activated ms krishna you're good to go is there any other questions or concerns you may have for me\r\ni know thank you i just have to have a payment to be done so i can do that online register myself and do it online thank you very much\r\nalright one more thing would you like to add at your mother's maiden name to your account for future verification\r\noh yes please i will do that it is my mother's maiden soon oh hello i wanna know okay i'll put it this is rama swami me s w a and y\r\nalright thank you now it only holds redacted so we have it it's just got cut off the last part of her last name but i did get it\r\nokay thank\r\nadded to the system alright\r\nyou so much thank\r\nthank\r\nyou for your help\r\nyou\r\nbye-bye\r\nms chris thank you\r\nthanks\r\ngab appreciate your business you take care bye-bye\r\nthanks bye-bye \r\n", "all representatives are currently assisting other callers please hold on the next available representative will thank you for calling p j x rewards my name is janine and i get your name please\r\nhi janine yes deirdre mcfadden\r\nthank you so much and then they help you today\r\ni'm calling because under a recent bill it was saying that my promotional rate was going to end soon and i'm wondering what that is about\r\nokay because you always pay your balance off in full it doesn't really apply to you because you never get entrance\r\noh\r\nsince\r\ngood\r\nyou didn't\r\nokay\r\npay your balance in full but there is eight there was a promotion that was going on for purchases that were made outside of our stores between november redacted and may fifteenth of this year\r\nokay\r\nwhere any purchases made outside of our stores they had zero percent interest\r\noh okay i didn't even realize that\r\nokay anything i can help with today\r\nno no that's fine so okay that's great thanks so much tony so i don't have any fees on this account at all as long as i pay my balance till there's no interest\r\nright yeah if you paid your balance in full you know on or before\r\nokay\r\nyour due date every month there's no interest\r\ngreat okay thank you so much have a nice night\r\nmy pleasure thank you for being a blood tj ex rewards customer and you have a great evening bye\r\nthank you bye-bye\r\nthank you bye-bye \r\n", "favor calling credit services my name is jasmine the afternoon\r\nhi jasmine this is crippled\r\nthank you and how may i help you today\r\nthis is mike and i wanna remind them at once\r\nyou wanted to activate the wall mart credit account\r\nyes i got the money once a month\r\nactually show here that your cards are activated\r\nwill not\r\ncorrect\r\nthis is shows i just got the list mary shields you must gimme a call machine does well i was calling you back give me a call\r\nwe do have them activated for you yes\r\nhello jose dave hey this is a call\r\ni really do appreciate you shopping with walmart was anything else that i can assist with\r\nmartha sounds pretty please appreciate your help\r\nalright thank you you have a great day\r\nyou bye-bye thinking \r\n", "hi it's william may have your first and last name please hi minutes william may have your first and last name please hyman's william you have your first and last name please i'm sorry up the job is calling for me to get on the calls for you and hear me please call the number the back of the card thank you for calling walmart and have a nice day bye thank you for participating in our survey please use your telephone keypad to enter your responses when waiting your satisfaction please keep in mind that one represents a low score and five represent a high score let's get started focusing specifically on the representative that you just spoke to overall how satisfied were you with that representative press one for not at all satisfied press two for slightly satisfied press three for somewhat satisfied press four for very satisfied or press five for completely satisfied what are the specific reasons for your rating please press one to record your comment now when complete please press pound the first time you contacted the credit center was your question or concern resolved press one for yes two for no or three if it's too soon to tell based upon the call you just completed has your question or concern been fully resolved press one for yes two for no or three if it's too soon to tell please rate your satisfaction with the representative in terms of providing all the information you needed press one for not at all satisfied press two for slightly satisfied press three for somewhat satisfied press four for very satisfied or press five for completely satisfied please rate your satisfaction with the representative in terms of responding in a caring tone and manner press one for not at all satisfied press two for slightly satisfied press three for somewhat satisfied press four for very satisfied or press five for completely satisfied please rate your satisfaction with the representative in terms of making you feel appreciated as a customer press one for not at all satisfied press two for slightly satisfied press three for somewhat satisfied press four for very satisfied or press five for completely satisfied how would you rate the service you just received compared to the phone service you've experienced with the other credit card banks press redacted needs improvement press two for about the same or press three for better than most overall how satisfied are you with this credit card press redacted for not at all satisfied press two for slightly satisfied press three for somewhat satisfied press four for very satisfied or press five for completely satisfied how likely would you be to recommend this credit card to friends or relatives press one for not at all likely press two for not very likely press three for somewhat likely press four for very likely or press five for extremely likely your feedback helps us improve our service thank you for your time and input \r\n", "our representatives are currently assisting other callers please hold on the next available representative will be happy to assist you our representatives are still assisting other callers your call is very important to us please continue to hold and the next available representative will be with you shortly\r\nhi\r\nthank you for calling card services my name is stephanie can i get your first and last name please\r\nit's tom first name chris penske last night\r\nokay i hope you today\r\ni was calling because i got the i got i guess they keep calling per se in the mail it's for i guess in like a like twenty dollars off once i activate my new card but i didn't get it but i didn't get a new card so i wasn't sure if in case redacted april tell like what i supposed to or like still in the mail\r\nlooks like the new card was sent out on february the redacted we do not receive that\r\nis it number four if this is sequence is redacted\r\nyou know sir\r\nno i don't know i never i never got it okay\r\nokay no problem what we can do is we can go ahead and close out that card and have another one sent to you hey can you verify your address for me\r\nit's forty four hundred north fourth street apartment two one seven arlington virginia two two two zero three yeah\r\nalright\r\nbecause because ask i called that activation number again it's on the on the keep on in and it's todd it's my phone and it didn't activate but i just never remember getting a card so yeah send to six give you a voice your things these days but stuff so might let me a call be sure but so\r\nyeah okay so let's see the last place so we have this card\r\nyeah\r\nlast time was use april redacted for harris teeter\r\nthat's always okay\r\nokay\r\nso also is that is it maybe just a new card\r\nwhat is the expiration\r\nyes it look\r\ndate on your\r\njune twentieth june redacted\r\nyes that would be no that's not the any card okay no that's awesome i'm sorry that is not the right expiration date so we'll go ahead and have one sent out to you just one moment here\r\nokay\r\nokay went ahead and close up that card we have another one coming to you and it should be there in about redacted business days\r\ni'm in a minute but but i missed but he likes to eat you don't see any at me anyway actual activity there on the other card alright\r\ni show some\r\nokay\r\nnot that no not the one that you did not receive i don't show any activity on that one\r\nokay no no no because i mean because because i use mine the one i have now is like often so i was just confused by like you know like the one that sent me again because you said back but i can but in every but i said i just don't remember ever getting one but maybe but maybe missed it\r\nyeah no problem we have one coming out to you and i would just keep an eye on it and it appears\r\nokay\r\nan undisclosed envelopes alright with anything if i can help you today\r\ni know hello\r\nokay thank you for calling school rewards and have a wonderful afternoon\r\nthank you you\r\nthank you hang \r\n", "thank you for calling lowes credit services my name is shivon i may i please have your first and last name\r\nangela keller house\r\nthank you so much for the information ms keller house i help you today\r\ni just need a duty of an invoice that was purchased in march of redacted\r\nmarch\r\nyeah\r\nredacted\r\ni just need the exact date i have the invoice number and the store number\r\ninvoice number will not help me but do you have that item do you know what the item was\r\nit was it was a frigidaire refrigerator dollars gallery series\r\nokay i can find it we just need to take that referred bridge there okay see march twenty seventeen and he said you already have the store number\r\nyes hello\r\nokay sounds like a call about warranty so i could give you that if you need it okay let's see i don't see any charges from march redacted mark\r\nhey joey\r\nmarch\r\nit's jeff i'm sorry i had\r\nyeah i'm just talking to them another thing if you can go ahead and you use your lowes card\r\nto purchase a refrigerator microwave so the dishwasher it was like on monday\r\nokay but maybe what that promotional balance list solomon go back to that\r\nyeah\r\nhey you didn't use your lowes credit card\r\ngrandma\r\nokay so i'm done now i just calling through the statement your account still wanted statements just looking\r\nthis\r\nthis nina by chance the sale amount that was done you made the purchase\r\nhi john i know it was a large amount but i can't tell me how to remember exactly how much it was i don't know if this is alison johnson\r\nokay that would be march redacted and let me go back up to the top i can see what year redacted\r\nokay what you got and redacted\r\nand\r\nokay\r\nthe store number you have it is redacted\r\nyes ma'am yes\r\nokay and the invoice number is redacted\r\nma'am\r\nalright\r\nalright thank you so much\r\nyou're welcome and thank you for being a part of roses or anything or if i can do to help you today\r\nyeah man thank you\r\nokay take care and again thanks for been a part of those have a good night\r\nthank you bye\r\nbye-bye hey \r\n"], "labels": [0, 0, 0, 1, 1, 1, 1], "meta": ["Payment", "Payment", "Payment", "Inquiry", "Rewards", "Promotions", "Survey"], "categories": ["Top 5 Topics", "Others"]}, "data": [{"term": "there", "bg": 2.5671279866016916e-08, "extra": 0, "cat25k": 288, "os": 0.9575862376907078, "ncat25k": 66, "neut": 0, "s": 0.9864864864864865, "oy": 0.6486486486486487, "ox": 0.0, "y": 0.6486486486486487, "x": 0.0, "cat": 6, "extra25k": 0, "ncat": 3, "neut25k": 0}, {"term": "my", "bg": 2.830733680934974e-08, "extra": 0, "cat25k": 480, "os": 0.9604527861451558, "ncat25k": 111, "neut": 0, "s": 1.0, "oy": 0.7297297297297297, "ox": 0.013513513513513514, "y": 0.7297297297297297, "x": 0.013513513513513514, "cat": 10, "extra25k": 0, "ncat": 5, "neut25k": 0}, {"term": "get", "bg": 3.960481118058078e-08, "extra": 0, "cat25k": 336, "os": 0.9354931409250515, "ncat25k": 111, "neut": 0, "s": 0.945945945945946, "oy": 0.7162162162162162, "ox": 0.02702702702702703, "y": 0.7162162162162162, "x": 0.02702702702702703, "cat": 7, "extra25k": 0, "ncat": 5, "neut25k": 0}, {"term": "on the", "bg": 0.0, "extra": 0, "cat25k": 192, "os": 0.82345425879333, "ncat25k": 133, "neut": 0, "s": 0.6621621621621623, "oy": 0.43243243243243246, "ox": 0.04054054054054054, "y": 0.43243243243243246, "x": 0.04054054054054054, "cat": 4, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "help", "bg": 2.9457177614040786e-08, "extra": 0, "cat25k": 144, "os": 0.18330892950002864, "ncat25k": 133, "neut": 0, "s": 0.5945945945945947, "oy": 0.33783783783783783, "ox": 0.05405405405405406, "y": 0.33783783783783783, "x": 0.05405405405405406, "cat": 3, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "bye", "bg": 5.288018128570385e-06, "extra": 0, "cat25k": 528, "os": 0.9552283302244504, "ncat25k": 133, "neut": 0, "s": 0.972972972972973, "oy": 0.7837837837837838, "ox": 0.06756756756756757, "y": 0.7837837837837838, "x": 0.06756756756756757, "cat": 11, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "m", "bg": 5.269532040875795e-08, "extra": 0, "cat25k": 144, "os": 0.18330892950002864, "ncat25k": 133, "neut": 0, "s": 0.5945945945945947, "oy": 0.35135135135135137, "ox": 0.08108108108108109, "y": 0.35135135135135137, "x": 0.08108108108108109, "cat": 3, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "i m", "bg": 0.0, "extra": 0, "cat25k": 144, "os": 0.18330892950002864, "ncat25k": 133, "neut": 0, "s": 0.5945945945945947, "oy": 0.3918918918918919, "ox": 0.0945945945945946, "y": 0.3918918918918919, "x": 0.0945945945945946, "cat": 3, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "alright", "bg": 6.6016495871906e-06, "extra": 0, "cat25k": 288, "os": 0.902384584109603, "ncat25k": 133, "neut": 0, "s": 0.9054054054054055, "oy": 0.6621621621621622, "ox": 0.10810810810810811, "y": 0.6621621621621622, "x": 0.10810810810810811, "cat": 6, "extra25k": 0, "ncat": 6, "neut25k": 0}, {"term": "all", "bg": 9.888935780024815e-09, "extra": 0, "cat25k": 144, "os": 0.14064115680749345, "ncat25k": 155, "neut": 0, "s": 0.5540540540540542, "oy": 0.2972972972972973, "ox": 0.12162162162162163, "y": 0.2972972972972973, "x": 0.12162162162162163, "cat": 3, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "representative", "bg": 6.708496602767007e-07, "extra": 0, "cat25k": 144, "os": 0.14064115680749345, "ncat25k": 155, "neut": 0, "s": 0.5540540540540542, "oy": 0.3108108108108108, "ox": 0.13513513513513514, "y": 0.3108108108108108, "x": 0.13513513513513514, "cat": 3, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "but i", "bg": 0.0, "extra": 0, "cat25k": 96, "os": 0.10909950166173654, "ncat25k": 155, "neut": 0, "s": 0.4054054054054055, "oy": 0.21621621621621623, "ox": 0.14864864864864866, "y": 0.21621621621621623, "x": 0.14864864864864866, "cat": 2, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "first", "bg": 3.113303416355484e-08, "extra": 0, "cat25k": 96, "os": 0.10909950166173654, "ncat25k": 155, "neut": 0, "s": 0.4054054054054055, "oy": 0.25675675675675674, "ox": 0.16216216216216217, "y": 0.25675675675675674, "x": 0.16216216216216217, "cat": 2, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "do", "bg": 2.524311762280143e-08, "extra": 0, "cat25k": 240, "os": 0.855871575637219, "ncat25k": 155, "neut": 0, "s": 0.7837837837837839, "oy": 0.5405405405405406, "ox": 0.17567567567567569, "y": 0.5405405405405406, "x": 0.17567567567567569, "cat": 5, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "i can", "bg": 0.0, "extra": 0, "cat25k": 192, "os": 0.804124346376039, "ncat25k": 155, "neut": 0, "s": 0.6351351351351352, "oy": 0.4594594594594595, "ox": 0.1891891891891892, "y": 0.4594594594594595, "x": 0.1891891891891892, "cat": 4, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "know", "bg": 6.533742360850521e-08, "extra": 0, "cat25k": 144, "os": 0.14064115680749345, "ncat25k": 155, "neut": 0, "s": 0.5540540540540542, "oy": 0.40540540540540543, "ox": 0.20270270270270271, "y": 0.40540540540540543, "x": 0.20270270270270271, "cat": 3, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "because", "bg": 8.108313535319458e-08, "extra": 0, "cat25k": 192, "os": 0.804124346376039, "ncat25k": 155, "neut": 0, "s": 0.6351351351351352, "oy": 0.47297297297297297, "ox": 0.21621621621621623, "y": 0.47297297297297297, "x": 0.21621621621621623, "cat": 4, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "be", "bg": 7.503981384276396e-09, "extra": 0, "cat25k": 96, "os": 0.10909950166173654, "ncat25k": 155, "neut": 0, "s": 0.4054054054054055, "oy": 0.2702702702702703, "ox": 0.22972972972972974, "y": 0.2702702702702703, "x": 0.22972972972972974, "cat": 2, "extra25k": 0, "ncat": 7, "neut25k": 0}, {"term": "very", "bg": 5.971471177022352e-08, "extra": 0, "cat25k": 96, "os": 0.08172180250048, "ncat25k": 177, "neut": 0, "s": 0.31081081081081086, "oy": 0.16216216216216217, "ox": 0.24324324324324326, "y": 0.16216216216216217, "x": 0.24324324324324326, "cat": 2, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "of", "bg": 2.281031392915577e-09, "extra": 0, "cat25k": 336, "os": 0.889987553372872, "ncat25k": 177, "neut": 0, "s": 0.891891891891892, "oy": 0.6891891891891891, "ox": 0.25675675675675674, "y": 0.6891891891891891, "x": 0.25675675675675674, "cat": 7, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "credit", "bg": 1.1368868110033906e-07, "extra": 0, "cat25k": 96, "os": 0.08172180250048, "ncat25k": 177, "neut": 0, "s": 0.31081081081081086, "oy": 0.17567567567567569, "ox": 0.2702702702702703, "y": 0.17567567567567569, "x": 0.2702702702702703, "cat": 2, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "call", "bg": 1.0019470787483965e-07, "extra": 0, "cat25k": 96, "os": 0.08172180250048, "ncat25k": 177, "neut": 0, "s": 0.31081081081081086, "oy": 0.1891891891891892, "ox": 0.28378378378378377, "y": 0.1891891891891892, "x": 0.28378378378378377, "cat": 2, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "at", "bg": 1.0562100714800464e-08, "extra": 0, "cat25k": 192, "os": 0.13898130631955996, "ncat25k": 177, "neut": 0, "s": 0.5405405405405407, "oy": 0.44594594594594594, "ox": 0.2972972972972973, "y": 0.44594594594594594, "x": 0.2972972972972973, "cat": 4, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "four", "bg": 1.5483521499667003e-07, "extra": 0, "cat25k": 96, "os": 0.08172180250048, "ncat25k": 177, "neut": 0, "s": 0.31081081081081086, "oy": 0.20270270270270271, "ox": 0.3108108108108108, "y": 0.20270270270270271, "x": 0.3108108108108108, "cat": 2, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "what", "bg": 2.7080320865613102e-08, "extra": 0, "cat25k": 144, "os": 0.11050281512098836, "ncat25k": 177, "neut": 0, "s": 0.472972972972973, "oy": 0.32432432432432434, "ox": 0.32432432432432434, "y": 0.32432432432432434, "x": 0.32432432432432434, "cat": 3, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "last", "bg": 6.2259926471841e-08, "extra": 0, "cat25k": 240, "os": 0.8388728290072178, "ncat25k": 177, "neut": 0, "s": 0.6891891891891893, "oy": 0.5540540540540541, "ox": 0.33783783783783783, "y": 0.5540540540540541, "x": 0.33783783783783783, "cat": 5, "extra25k": 0, "ncat": 8, "neut25k": 0}, {"term": "name", "bg": 6.888606369920143e-08, "extra": 0, "cat25k": 336, "os": 0.8761895006831079, "ncat25k": 199, "neut": 0, "s": 0.8783783783783784, "oy": 0.7027027027027027, "ox": 0.35135135135135137, "y": 0.7027027027027027, "x": 0.35135135135135137, "cat": 7, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "we", "bg": 1.4381615169055771e-08, "extra": 0, "cat25k": 48, "os": 0.03800904791415577, "ncat25k": 199, "neut": 0, "s": 0.14864864864864866, "oy": 0.12162162162162163, "ox": 0.36486486486486486, "y": 0.12162162162162163, "x": 0.36486486486486486, "cat": 1, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "yeah", "bg": 9.280419474960269e-07, "extra": 0, "cat25k": 144, "os": 0.08978235815893082, "ncat25k": 199, "neut": 0, "s": 0.3648648648648649, "oy": 0.36486486486486486, "ox": 0.3783783783783784, "y": 0.36486486486486486, "x": 0.3783783783783784, "cat": 3, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "yes", "bg": 1.879726442909503e-07, "extra": 0, "cat25k": 288, "os": 0.8549045390922169, "ncat25k": 199, "neut": 0, "s": 0.7702702702702704, "oy": 0.6351351351351351, "ox": 0.3918918918918919, "y": 0.6351351351351351, "x": 0.3918918918918919, "cat": 6, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "if", "bg": 1.7621294744032365e-08, "extra": 0, "cat25k": 48, "os": 0.03800904791415577, "ncat25k": 199, "neut": 0, "s": 0.14864864864864866, "oy": 0.14864864864864866, "ox": 0.40540540540540543, "y": 0.14864864864864866, "x": 0.40540540540540543, "cat": 1, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "number", "bg": 4.690061506404607e-08, "extra": 0, "cat25k": 0, "os": 0.013904991992318705, "ncat25k": 199, "neut": 0, "s": 0.08108108108108109, "oy": 0.02702702702702703, "ox": 0.4189189189189189, "y": 0.02702702702702703, "x": 0.4189189189189189, "cat": 0, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "two for", "bg": 0.0, "extra": 0, "cat25k": 0, "os": 0.013904991992318705, "ncat25k": 199, "neut": 0, "s": 0.08108108108108109, "oy": 0.05405405405405406, "ox": 0.43243243243243246, "y": 0.05405405405405406, "x": 0.43243243243243246, "cat": 0, "extra25k": 0, "ncat": 9, "neut25k": 0}, {"term": "calling", "bg": 1.0024775564489264e-06, "extra": 0, "cat25k": 240, "os": 0.12310452605482264, "ncat25k": 221, "neut": 0, "s": 0.5270270270270271, "oy": 0.5135135135135135, "ox": 0.44594594594594594, "y": 0.5135135135135135, "x": 0.44594594594594594, "cat": 5, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "me", "bg": 4.2356418887616665e-08, "extra": 0, "cat25k": 96, "os": 0.051846981528225256, "ncat25k": 221, "neut": 0, "s": 0.20270270270270271, "oy": 0.22972972972972974, "ox": 0.4594594594594595, "y": 0.22972972972972974, "x": 0.4594594594594595, "cat": 2, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "it s", "bg": 0.0, "extra": 0, "cat25k": 288, "os": 0.841000134337291, "ncat25k": 221, "neut": 0, "s": 0.7162162162162163, "oy": 0.6216216216216216, "ox": 0.47297297297297297, "y": 0.6216216216216216, "x": 0.47297297297297297, "cat": 6, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "like", "bg": 4.225992558872303e-08, "extra": 0, "cat25k": 48, "os": 0.02862893237713776, "ncat25k": 221, "neut": 0, "s": 0.12162162162162161, "oy": 0.13513513513513514, "ox": 0.4864864864864865, "y": 0.13513513513513514, "x": 0.4864864864864865, "cat": 1, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "with", "bg": 7.539788526694312e-09, "extra": 0, "cat25k": 96, "os": 0.051846981528225256, "ncat25k": 221, "neut": 0, "s": 0.20270270270270271, "oy": 0.28378378378378377, "ox": 0.5, "y": 0.28378378378378377, "x": 0.5, "cat": 2, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "three", "bg": 8.951755436107905e-08, "extra": 0, "cat25k": 0, "os": 0.006716458906063705, "ncat25k": 221, "neut": 0, "s": 0.04054054054054054, "oy": 0.04054054054054054, "ox": 0.5135135135135135, "y": 0.04054054054054054, "x": 0.5135135135135135, "cat": 0, "extra25k": 0, "ncat": 10, "neut25k": 0}, {"term": "this", "bg": 9.911808908969811e-09, "extra": 0, "cat25k": 240, "os": 0.1094835255991824, "ncat25k": 243, "neut": 0, "s": 0.445945945945946, "oy": 0.527027027027027, "ox": 0.527027027027027, "y": 0.527027027027027, "x": 0.527027027027027, "cat": 5, "extra25k": 0, "ncat": 11, "neut25k": 0}, {"term": "no", "bg": 3.4147363875050026e-08, "extra": 0, "cat25k": 240, "os": 0.1094835255991824, "ncat25k": 243, "neut": 0, "s": 0.445945945945946, "oy": 0.5945945945945946, "ox": 0.5405405405405406, "y": 0.5945945945945946, "x": 0.5405405405405406, "cat": 5, "extra25k": 0, "ncat": 11, "neut25k": 0}, {"term": "on", "bg": 1.013218318193683e-08, "extra": 0, "cat25k": 336, "os": 0.8390720227517652, "ncat25k": 265, "neut": 0, "s": 0.7027027027027027, "oy": 0.6756756756756757, "ox": 0.5540540540540541, "y": 0.6756756756756757, "x": 0.5540540540540541, "cat": 7, "extra25k": 0, "ncat": 12, "neut25k": 0}, {"term": "can", "bg": 2.8977901620457055e-08, "extra": 0, "cat25k": 288, "os": 0.11882926109197689, "ncat25k": 265, "neut": 0, "s": 0.4864864864864865, "oy": 0.6081081081081081, "ox": 0.5675675675675675, "y": 0.6081081081081081, "x": 0.5675675675675675, "cat": 6, "extra25k": 0, "ncat": 12, "neut25k": 0}, {"term": "t", "bg": 8.237857932867719e-08, "extra": 0, "cat25k": 192, "os": 0.07897478167868954, "ncat25k": 265, "neut": 0, "s": 0.29729729729729737, "oy": 0.5, "ox": 0.581081081081081, "y": 0.5, "x": 0.581081081081081, "cat": 4, "extra25k": 0, "ncat": 12, "neut25k": 0}, {"term": "two", "bg": 6.343439501025954e-08, "extra": 0, "cat25k": 48, "os": 0.01740676805910346, "ncat25k": 288, "neut": 0, "s": 0.10810810810810811, "oy": 0.08108108108108109, "ox": 0.5945945945945946, "y": 0.08108108108108109, "x": 0.5945945945945946, "cat": 1, "extra25k": 0, "ncat": 13, "neut25k": 0}, {"term": "so", "bg": 7.252814505665276e-08, "extra": 0, "cat25k": 480, "os": 0.8661215967936897, "ncat25k": 310, "neut": 0, "s": 0.8378378378378379, "oy": 0.7432432432432432, "ox": 0.6081081081081081, "y": 0.7432432432432432, "x": 0.6081081081081081, "cat": 10, "extra25k": 0, "ncat": 14, "neut25k": 0}, {"term": "thank", "bg": 1.1385730719118958e-06, "extra": 0, "cat25k": 1008, "os": 0.9360031850648458, "ncat25k": 332, "neut": 0, "s": 0.9594594594594595, "oy": 0.972972972972973, "ox": 0.6216216216216216, "y": 0.972972972972973, "x": 0.6216216216216216, "cat": 21, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "thank you", "bg": 0.0, "extra": 0, "cat25k": 912, "os": 0.9276171577246537, "ncat25k": 332, "neut": 0, "s": 0.9324324324324325, "oy": 0.9324324324324325, "ox": 0.6351351351351351, "y": 0.9324324324324325, "x": 0.6351351351351351, "cat": 19, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "not", "bg": 1.2910626167571526e-08, "extra": 0, "cat25k": 96, "os": 0.029986997828707396, "ncat25k": 332, "neut": 0, "s": 0.13513513513513514, "oy": 0.24324324324324326, "ox": 0.6486486486486487, "y": 0.24324324324324326, "x": 0.6486486486486487, "cat": 2, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "in", "bg": 4.7228805819032076e-09, "extra": 0, "cat25k": 240, "os": 0.07794256399948318, "ncat25k": 332, "neut": 0, "s": 0.27027027027027034, "oy": 0.5675675675675675, "ox": 0.6621621621621622, "y": 0.5675675675675675, "x": 0.6621621621621622, "cat": 5, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "or", "bg": 1.3895630912839194e-08, "extra": 0, "cat25k": 144, "os": 0.04576746213113392, "ncat25k": 332, "neut": 0, "s": 0.1891891891891892, "oy": 0.4189189189189189, "ox": 0.6756756756756757, "y": 0.4189189189189189, "x": 0.6756756756756757, "cat": 3, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "was", "bg": 2.696451380999709e-08, "extra": 0, "cat25k": 240, "os": 0.07794256399948318, "ncat25k": 332, "neut": 0, "s": 0.27027027027027034, "oy": 0.581081081081081, "ox": 0.6891891891891891, "y": 0.581081081081081, "x": 0.6891891891891891, "cat": 5, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "satisfied press", "bg": 0.0, "extra": 0, "cat25k": 0, "os": 6.036669298170594e-05, "ncat25k": 332, "neut": 0, "s": 0.027027027027027025, "oy": 0.0, "ox": 0.7027027027027027, "y": 0.0, "x": 0.7027027027027027, "cat": 0, "extra25k": 0, "ncat": 15, "neut25k": 0}, {"term": "please", "bg": 1.4208700236069924e-07, "extra": 0, "cat25k": 528, "os": 0.8612605270358581, "ncat25k": 354, "neut": 0, "s": 0.8108108108108109, "oy": 0.7567567567567568, "ox": 0.7162162162162162, "y": 0.7567567567567568, "x": 0.7162162162162162, "cat": 11, "extra25k": 0, "ncat": 16, "neut25k": 0}, {"term": "redacted", "bg": 0.00012187607911111715, "extra": 0, "cat25k": 528, "os": 0.8612605270358581, "ncat25k": 354, "neut": 0, "s": 0.8108108108108109, "oy": 0.8108108108108109, "ox": 0.7297297297297297, "y": 0.8108108108108109, "x": 0.7297297297297297, "cat": 11, "extra25k": 0, "ncat": 16, "neut25k": 0}, {"term": "just", "bg": 8.210204571290665e-08, "extra": 0, "cat25k": 144, "os": 0.04274512063291158, "ncat25k": 354, "neut": 0, "s": 0.17567567567567569, "oy": 0.3783783783783784, "ox": 0.7432432432432432, "y": 0.3783783783783784, "x": 0.7432432432432432, "cat": 3, "extra25k": 0, "ncat": 16, "neut25k": 0}, {"term": "but", "bg": 4.0003914943131996e-08, "extra": 0, "cat25k": 192, "os": 0.05774605339743122, "ncat25k": 354, "neut": 0, "s": 0.24324324324324326, "oy": 0.4864864864864865, "ox": 0.7567567567567568, "y": 0.4864864864864865, "x": 0.7567567567567568, "cat": 4, "extra25k": 0, "ncat": 16, "neut25k": 0}, {"term": "card", "bg": 1.9846791370892968e-07, "extra": 0, "cat25k": 48, "os": 0.012855227705638628, "ncat25k": 376, "neut": 0, "s": 0.06756756756756757, "oy": 0.0945945945945946, "ox": 0.7702702702702703, "y": 0.0945945945945946, "x": 0.7702702702702703, "cat": 1, "extra25k": 0, "ncat": 17, "neut25k": 0}, {"term": "s", "bg": 2.2548527439869732e-08, "extra": 0, "cat25k": 912, "os": 0.916131386926715, "ncat25k": 376, "neut": 0, "s": 0.918918918918919, "oy": 0.9459459459459459, "ox": 0.7837837837837838, "y": 0.9459459459459459, "x": 0.7837837837837838, "cat": 19, "extra25k": 0, "ncat": 17, "neut25k": 0}, {"term": "have", "bg": 3.835813765927783e-08, "extra": 0, "cat25k": 528, "os": 0.8384698627827305, "ncat25k": 420, "neut": 0, "s": 0.6756756756756758, "oy": 0.7972972972972973, "ox": 0.7972972972972973, "y": 0.7972972972972973, "x": 0.7972972972972973, "cat": 11, "extra25k": 0, "ncat": 19, "neut25k": 0}, {"term": "one", "bg": 4.227312182094926e-08, "extra": 0, "cat25k": 48, "os": 0.010881169998679718, "ncat25k": 442, "neut": 0, "s": 0.05405405405405405, "oy": 0.10810810810810811, "ox": 0.8108108108108109, "y": 0.10810810810810811, "x": 0.8108108108108109, "cat": 1, "extra25k": 0, "ncat": 20, "neut25k": 0}, {"term": "is", "bg": 1.57254545924242e-08, "extra": 0, "cat25k": 768, "os": 0.8741394873057182, "ncat25k": 465, "neut": 0, "s": 0.8648648648648649, "oy": 0.8918918918918919, "ox": 0.8243243243243243, "y": 0.8918918918918919, "x": 0.8243243243243243, "cat": 16, "extra25k": 0, "ncat": 21, "neut25k": 0}, {"term": "okay", "bg": 5.07461736897094e-06, "extra": 0, "cat25k": 720, "os": 0.8487967463119965, "ncat25k": 531, "neut": 0, "s": 0.7297297297297298, "oy": 0.8783783783783784, "ox": 0.8378378378378378, "y": 0.8783783783783784, "x": 0.8378378378378378, "cat": 15, "extra25k": 0, "ncat": 24, "neut25k": 0}, {"term": "your", "bg": 4.1705683869601086e-08, "extra": 0, "cat25k": 816, "os": 0.8547554268431388, "ncat25k": 575, "neut": 0, "s": 0.7567567567567568, "oy": 0.918918918918919, "ox": 0.8513513513513513, "y": 0.918918918918919, "x": 0.8513513513513513, "cat": 17, "extra25k": 0, "ncat": 26, "neut25k": 0}, {"term": "a", "bg": 8.148723276145977e-09, "extra": 0, "cat25k": 528, "os": 0.09953120347774064, "ncat25k": 575, "neut": 0, "s": 0.39189189189189194, "oy": 0.7702702702702703, "ox": 0.8648648648648649, "y": 0.7702702702702703, "x": 0.8648648648648649, "cat": 11, "extra25k": 0, "ncat": 26, "neut25k": 0}, {"term": "to", "bg": 7.250566088853708e-09, "extra": 0, "cat25k": 816, "os": 0.8497782319518918, "ncat25k": 597, "neut": 0, "s": 0.7432432432432433, "oy": 0.9054054054054054, "ox": 0.8783783783783784, "y": 0.9054054054054054, "x": 0.8783783783783784, "cat": 17, "extra25k": 0, "ncat": 27, "neut25k": 0}, {"term": "that", "bg": 2.41174086795188e-08, "extra": 0, "cat25k": 672, "os": 0.12219231811885817, "ncat25k": 597, "neut": 0, "s": 0.5135135135135136, "oy": 0.8513513513513513, "ox": 0.8918918918918919, "y": 0.8513513513513513, "x": 0.8918918918918919, "cat": 14, "extra25k": 0, "ncat": 27, "neut25k": 0}, {"term": "satisfied", "bg": 3.700687567190608e-06, "extra": 0, "cat25k": 0, "os": 3.5177416535248085e-13, "ncat25k": 597, "neut": 0, "s": 0.013513513513513514, "oy": 0.013513513513513514, "ox": 0.9054054054054054, "y": 0.013513513513513514, "x": 0.9054054054054054, "cat": 0, "extra25k": 0, "ncat": 27, "neut25k": 0}, {"term": "it", "bg": 3.4125247815416806e-08, "extra": 0, "cat25k": 960, "os": 0.8661222347424821, "ncat25k": 619, "neut": 0, "s": 0.8513513513513514, "oy": 0.9594594594594594, "ox": 0.918918918918919, "y": 0.9594594594594594, "x": 0.918918918918919, "cat": 20, "extra25k": 0, "ncat": 28, "neut25k": 0}, {"term": "and", "bg": 6.924333704025513e-09, "extra": 0, "cat25k": 624, "os": 0.09549139345662494, "ncat25k": 708, "neut": 0, "s": 0.37837837837837845, "oy": 0.8378378378378378, "ox": 0.9324324324324325, "y": 0.8378378378378378, "x": 0.9324324324324325, "cat": 13, "extra25k": 0, "ncat": 32, "neut25k": 0}, {"term": "press", "bg": 4.11900062201919e-07, "extra": 0, "cat25k": 0, "os": 0.0, "ncat25k": 819, "neut": 0, "s": 0.0, "oy": 0.06756756756756757, "ox": 0.9459459459459459, "y": 0.06756756756756757, "x": 0.9459459459459459, "cat": 0, "extra25k": 0, "ncat": 37, "neut25k": 0}, {"term": "for", "bg": 2.191014595346648e-08, "extra": 0, "cat25k": 624, "os": 0.0577292478206437, "ncat25k": 1150, "neut": 0, "s": 0.22972972972972974, "oy": 0.8243243243243243, "ox": 0.9594594594594594, "y": 0.8243243243243243, "x": 0.9594594594594594, "cat": 13, "extra25k": 0, "ncat": 52, "neut25k": 0}, {"term": "the", "bg": 5.791876184457671e-09, "extra": 0, "cat25k": 720, "os": 0.06702662563372336, "ncat25k": 1150, "neut": 0, "s": 0.2567567567567568, "oy": 0.8648648648648649, "ox": 0.972972972972973, "y": 0.8648648648648649, "x": 0.972972972972973, "cat": 15, "extra25k": 0, "ncat": 52, "neut25k": 0}, {"term": "i", "bg": 5.7675586482982104e-08, "extra": 0, "cat25k": 1440, "os": 0.1198314057199999, "ncat25k": 1305, "neut": 0, "s": 0.5000000000000001, "oy": 0.9864864864864865, "ox": 0.9864864864864865, "y": 0.9864864864864865, "x": 0.9864864864864865, "cat": 30, "extra25k": 0, "ncat": 59, "neut25k": 0}, {"term": "you", "bg": 7.342674201283267e-08, "extra": 0, "cat25k": 2111, "os": 0.85728805823384, "ncat25k": 1460, "neut": 0, "s": 0.7972972972972974, "oy": 1.0, "ox": 1.0, "y": 1.0, "x": 1.0, "cat": 44, "extra25k": 0, "ncat": 66, "neut25k": 0}]}; }
+plotInterface = buildViz(1000,600,null,null,true,false,false,false,false,true,false,false,true,0.1,false,undefined,undefined,getDataAndInfo(),true,false,null,null,null,null,true,false,true,false);
 </script>
