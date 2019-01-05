@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Speech Data</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        
+        <h1 > Textopedia  </h1>
+        <strong><nav>
+          <ul class="menu">
+            <li><a href="{{ url_for('home') }}">Word Context</a></li>
+            <li><a href="{{ url_for('WordAlgebra') }}">Word Algebra</a></li>
+            <li><a href="{{ url_for('WordPrefix') }}">Word Prefix</a></li>
+            <li><a href="{{ url_for('concordance') }}">Phrase Concordance</a></li>
+            <li><a href="{{ url_for('sentiment') }}">Opinion Mining</a></li>
+
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+    <div class="container">
+      {% block content %}
+      {% endblock %}
+    </div>
+  </body>
+</html>

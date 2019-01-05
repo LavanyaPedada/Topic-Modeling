@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+   <div class="Word Algebra">
+     <h1>Word Algebra</h1>
+     <p>Add and Subtract data.</p>
+   </div>
+
+<form method="POST">
+    <label for="add"> Word List to be added </label><br><br>
+    <input name="add" multiple><br><br>
+    <label for="sub"> Word List to be excluded </label><br><br>
+    <input name="sub"><br><br>
+    <label for="top_wa"> Top N </label><br><br>
+    <input type="number" name="top_wa"><br><br>
+    <input type="submit">
+</form>
+
+ {% endblock %}

@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+   <div class="Get Frequently Associated word">
+     <h1>Get the most associated words for the input word </h1>
+     <p>Prints words with weightage</p>
+   </div>
+
+<form method="POST">
+    <label for="p_word"> Enter the Word </label><br><br>
+    <input name="p_word"><br><br>
+    <label for="p_length"> Top n </label><br><br>
+    <input type="number" name="p_length"><br><br>
+    <input type="submit">
+</form>
+
+ {% endblock %}

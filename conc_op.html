@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Prefix Words</title>
+
+<!-- CSS -->
+<style>
+.myTable { 
+  width: 120%;
+  text-align: left;
+  background-color: Silver;
+  border-collapse: collapse; 
+  }
+.myTable th { 
+  background-color: goldenrod;
+  color: white; 
+  }
+.myTable td, 
+.myTable th { 
+  padding: 1px;
+  border: 1px solid goldenrod; 
+  word-wrap:break-word;
+  }
+</style>
+
+</head>
+<body>
+
+
+
+
+<table class="myTable">
+    <thead>
+        <tr >
+            {% for col in colnames %}
+            <th>{{ col }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in records %}
+        <tr>
+            {% for col in colnames %}
+            <td><span style="max-width:150px;">{{ record[col] }}</span></td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,47 @@
+// index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Datatables Example</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.18/css/jquery.dataTables.min.css"/>
+  <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+  <script src="https://cdn.datatables.net/1.10.18/js/jquery.dataTables.min.js"></script>
+</head>
+<body>
+<h1>Data</h1>
+<table id="example" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>Word</th>
+                <th>Weigtage</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <th>Word</th>
+                <th>Weigtage</th>
+                
+            </tr>
+        </tfoot>
+    </table>
+<script>
+$(document).ready(function() {
+    $('#example').DataTable( {
+        "ajax": {
+            // "url": "static/objects2.txt", // This works for the static file
+            "url": "/index", // This doesn't work
+            "dataType": "json",
+            // "dataSrc": "data",
+            // "contentType":"application/json"
+        },
+        "columns": [
+            { "data": "Word" },
+            { "data": "Weigtage" }
+           
+        ]
+    } );
+} );
+</script>
+</body>
+</html>

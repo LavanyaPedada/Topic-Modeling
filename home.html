@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="Word Similarity">
+    <h1>Get Word Similarity </h1>
+    <p>Provides the similar context words with weightage.</p>
+  </div>
+
+<form method="POST">
+
+    <label for="text"> Enter the Inquiry </label><br><br>
+    <input name="text"> <br><br>
+     
+    <label for="topN"> Top "N" Words </label><br><br>
+    <input type="number" name="topN"> <br><br> 
+
+    <input type="submit">
+</form>
+
+
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block content %}
+   <div class="Opinion Mining">
+     <h1>Get the Sentiment Break up for the specific word used in the call </h1>
+     <p>Provides the call count and sentiment distribution of the input word</p>
+   </div>
+
+<form method="POST">
+    <label for="s_word"> Enter the specific word to know the sentiment distribution </label><br><br>
+    <input name="s_word"><br><br>
+     <input type="submit">
+</form>
+
+ {% endblock %}
